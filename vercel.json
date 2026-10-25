@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "name": "graph-traversal-visualizer",
+  "builds": [
+    {
+      "src": "**/*",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+}

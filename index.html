@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GraphTraverse | Interactive Graph Traversal & Pathfinding Visualizer</title>
+  <meta name="description" content="Explore BFS, DFS, Dijkstra, and A* algorithms interactively with live pseudocode tracing, custom graph creation, and real-time data structure inspection.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2240%22 fill=%22%236366f1%22/><circle cx=%2225%22 cy=%2230%22 r=%2210%22 fill=%22%2310b981%22/><circle cx=%2275%22 cy=%2270%22 r=%2210%22 fill=%22%23f43f5e%22/><line x1=%2225%22 y1=%2230%22 x2=%2275%22 y2=%2270%22 stroke=%22white%22 stroke-width=%226%22/></svg>">
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-950 text-slate-100 flex flex-col h-screen overflow-hidden">
+
+  <!-- TOP HEADER -->
+  <header class="h-16 border-b border-slate-800 bg-slate-900/80 backdrop-blur-md px-4 flex items-center justify-between z-20 flex-shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="6" cy="6" r="3" stroke-width="2"></circle>
+          <circle cx="18" cy="18" r="3" stroke-width="2"></circle>
+          <circle cx="18" cy="6" r="3" stroke-width="2"></circle>
+          <line x1="8.5" y1="7.5" x2="15.5" y2="16.5" stroke-width="2"></line>
+          <line x1="9" y1="6" x2="15" y2="6" stroke-width="2"></line>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-base font-bold bg-gradient-to-r from-indigo-300 via-cyan-200 to-white bg-clip-text text-transparent flex items-center gap-2">
+          GraphTraverse
+          <span class="text-[10px] font-semibold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full">v1.0</span>
+        </h1>
+        <p class="text-xs text-slate-400">Interactive Algorithm & Pathfinding Explorer</p>
+      </div>
+    </div>
+
+    <!-- PRIMARY CONFIGURATION CONTROLS -->
+    <div class="flex items-center gap-3">
+      <!-- Algorithm Selector -->
+      <div class="flex items-center gap-2 bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-1.5">
+        <label for="algoSelect" class="text-xs font-medium text-slate-400 flex items-center gap-1">
+          <i data-lucide="cpu" class="w-3.5 h-3.5 text-indigo-400"></i>
+          Algorithm:
+        </label>
+        <select id="algoSelect" class="bg-transparent text-sm font-semibold text-indigo-200 focus:outline-none cursor-pointer">
+          <option value="bfs" class="bg-slate-900 text-slate-200">Breadth-First Search (BFS)</option>
+          <option value="dfs" class="bg-slate-900 text-slate-200">Depth-First Search (DFS)</option>
+          <option value="dijkstra" class="bg-slate-900 text-slate-200">Dijkstra's Algorithm</option>
+          <option value="astar" class="bg-slate-900 text-slate-200">A* Search Algorithm</option>
+          <option value="greedy" class="bg-slate-900 text-slate-200">Greedy Best-First</option>
+        </select>
+      </div>
+
+      <!-- Preset Topologies -->
+      <div class="flex items-center gap-2 bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-1.5">
+        <label for="presetSelect" class="text-xs font-medium text-slate-400 flex items-center gap-1">
+          <i data-lucide="network" class="w-3.5 h-3.5 text-cyan-400"></i>
+          Preset:
+        </label>
+        <select id="presetSelect" class="bg-transparent text-sm font-semibold text-cyan-200 focus:outline-none cursor-pointer">
+          <option value="cityNetwork" class="bg-slate-900 text-slate-200">City Road Network (Weighted)</option>
+          <option value="binaryTree" class="bg-slate-900 text-slate-200">Binary Tree (Hierarchical)</option>
+          <option value="gridLattice" class="bg-slate-900 text-slate-200">Grid Lattice with Obstacles</option>
+          <option value="cycleAndBridge" class="bg-slate-900 text-slate-200">Cycles & Bridge Graph</option>
+          <option value="randomNetwork" class="bg-slate-900 text-slate-200">Random Connected Graph</option>
+        </select>
+      </div>
+
+      <!-- Start & Target Selectors -->
+      <div class="flex items-center gap-2 bg-slate-800/80 border border-slate-700/80 rounded-lg px-2.5 py-1.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500"></span>
+        <label for="startNodeSelect" class="text-xs text-slate-400">Start:</label>
+        <select id="startNodeSelect" class="bg-transparent text-xs font-semibold text-emerald-300 focus:outline-none cursor-pointer">
+          <!-- Populated dynamically -->
+        </select>
+
+        <span class="w-px h-4 bg-slate-700 mx-1"></span>
+
+        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm shadow-rose-500"></span>
+        <label for="targetNodeSelect" class="text-xs text-slate-400">Target:</label>
+        <select id="targetNodeSelect" class="bg-transparent text-xs font-semibold text-rose-300 focus:outline-none cursor-pointer">
+          <!-- Populated dynamically -->
+        </select>
+      </div>
+
+      <!-- Graph Mode Toggles -->
+      <div class="flex items-center gap-3 bg-slate-800/80 border border-slate-700/80 rounded-lg px-3 py-1.5">
+        <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
+          <input type="checkbox" id="directedToggle" class="accent-indigo-500 rounded">
+          <span>Directed</span>
+        </label>
+        <span class="w-px h-4 bg-slate-700"></span>
+        <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer select-none">
+          <input type="checkbox" id="weightedToggle" checked class="accent-indigo-500 rounded">
+          <span>Weighted</span>
+        </label>
+      </div>
+
+      <!-- Deployment / Help Button -->
+      <button id="openDeployModalBtn" class="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg text-xs font-bold shadow-md shadow-emerald-600/20 transition-all">
+        <i data-lucide="rocket" class="w-3.5 h-3.5"></i>
+        <span>Deploy</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- FLOATING LEFT TOOLBAR (Graph Edit Tools) -->
+    <div class="absolute left-4 top-4 z-10 flex flex-col gap-1.5 glass-panel p-1.5 rounded-xl border border-slate-700/60 shadow-2xl">
+      <button data-mode="select" class="tool-btn active-tool p-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 relative group" title="Select & Move Node (Drag)">
+        <i data-lucide="move" class="w-4 h-4"></i>
+        <span class="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-xs rounded shadow-lg text-slate-200 hidden group-hover:block whitespace-nowrap z-30">Move Node</span>
+      </button>
+
+      <button data-mode="addNode" class="tool-btn p-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 relative group" title="Add Node (Click canvas)">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+        <span class="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-xs rounded shadow-lg text-slate-200 hidden group-hover:block whitespace-nowrap z-30">Add Node</span>
+      </button>
+
+      <button data-mode="addEdge" class="tool-btn p-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/60 relative group" title="Add Edge (Click two nodes)">
+        <i data-lucide="git-commit" class="w-4 h-4"></i>
+        <span class="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-xs rounded shadow-lg text-slate-200 hidden group-hover:block whitespace-nowrap z-30">Connect Nodes</span>
+      </button>
+
+      <div class="w-full h-px bg-slate-700/60 my-0.5"></div>
+
+      <button data-mode="setStart" class="tool-btn p-2.5 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/40 relative group" title="Set Start Node">
+        <i data-lucide="flag" class="w-4 h-4"></i>
+        <span class="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-xs rounded shadow-lg text-slate-200 hidden group-hover:block whitespace-nowrap z-30">Set Start Node</span>
+      </button>
+
+      <button data-mode="setTarget" class="tool-btn p-2.5 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 relative group" title="Set Target Node">
+        <i data-lucide="target" class="w-4 h-4"></i>
+        <span class="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-xs rounded shadow-lg text-slate-200 hidden group-hover:block whitespace-nowrap z-30">Set Target Node</span>
+      </button>
+
+      <div class="w-full h-px bg-slate-700/60 my-0.5"></div>
+
+      <button data-mode="delete" class="tool-btn p-2.5 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 relative group" title="Delete Node or Edge">
+        <i data-lucide="trash-2" class="w-4 h-4"></i>
+        <span class="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-xs rounded shadow-lg text-slate-200 hidden group-hover:block whitespace-nowrap z-30">Delete Tool</span>
+      </button>
+    </div>
+
+    <!-- CANVAS WRAPPER -->
+    <div class="flex-1 relative h-full w-full bg-slate-950">
+      <canvas id="graphCanvas"></canvas>
+
+      <!-- FLOATING CANVAS CONTROLS (Bottom-Right of Canvas) -->
+      <div class="absolute right-4 bottom-4 z-10 flex items-center gap-2 glass-panel px-3 py-1.5 rounded-xl border border-slate-700/60 shadow-xl">
+        <button id="randomizeWeightsBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-slate-800 transition" title="Randomize Weights">
+          <i data-lucide="shuffle" class="w-4 h-4"></i>
+        </button>
+        <span class="w-px h-4 bg-slate-700"></span>
+        <button id="centerBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Center View">
+          <i data-lucide="focus" class="w-4 h-4"></i>
+        </button>
+        <button id="resetViewBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Reset Zoom">
+          <i data-lucide="maximize" class="w-4 h-4"></i>
+        </button>
+        <span class="w-px h-4 bg-slate-700"></span>
+        <button id="clearBtn" class="px-2 py-1 text-xs font-semibold text-rose-400 hover:bg-rose-950/40 rounded transition flex items-center gap-1">
+          <i data-lucide="eraser" class="w-3.5 h-3.5"></i>
+          Clear
+        </button>
+      </div>
+
+      <!-- FLOATING LEGEND (Bottom-Left of Canvas) -->
+      <div class="absolute left-4 bottom-4 z-10 flex items-center gap-4 glass-panel px-3.5 py-2 rounded-xl border border-slate-700/60 shadow-xl text-xs text-slate-300">
+        <div class="flex items-center gap-1.5">
+          <span class="w-3 h-3 rounded-full bg-emerald-600 border border-emerald-400 shadow-sm shadow-emerald-500"></span>
+          <span>Start</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-3 h-3 rounded-full bg-rose-600 border border-rose-400 shadow-sm shadow-rose-500"></span>
+          <span>Target</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-3 h-3 rounded-full bg-cyan-700 border border-cyan-400 shadow-sm shadow-cyan-400"></span>
+          <span>Frontier / In DS</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-3 h-3 rounded-full bg-amber-600 border border-amber-400 shadow-sm shadow-amber-400"></span>
+          <span>Active</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-3 h-3 rounded-full bg-indigo-700 border border-indigo-400"></span>
+          <span>Visited</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-3 h-3 rounded-full bg-emerald-500 border-2 border-emerald-300 shadow-md shadow-emerald-400"></span>
+          <span>Shortest Path</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT INSPECTOR SIDEBAR -->
+    <aside class="w-96 border-l border-slate-800 bg-slate-900/90 backdrop-blur-md flex flex-col flex-shrink-0 z-10">
+      
+      <!-- REAL-TIME DATA STRUCTURE INSPECTION -->
+      <div class="p-3.5 border-b border-slate-800">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+            <i data-lucide="layers" class="w-4 h-4"></i>
+            Live Data Structure
+          </h2>
+          <span id="dsTitle" class="text-[11px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800 px-2 py-0.5 rounded">
+            Queue (FIFO)
+          </span>
+        </div>
+        <div id="dsContainer" class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 bg-slate-950/60 rounded-lg border border-slate-800/80 min-h-[46px] items-center">
+          <span class="text-xs text-slate-500 italic">Empty</span>
+        </div>
+      </div>
+
+      <!-- PSEUDOCODE HIGHLIGHTER -->
+      <div class="flex-1 flex flex-col p-3.5 overflow-hidden border-b border-slate-800">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+            <i data-lucide="code" class="w-4 h-4"></i>
+            Algorithm Tracing
+          </h2>
+          <span class="text-[10px] text-slate-400">Synced Line Highlight</span>
+        </div>
+        <div id="pseudocodeContainer" class="flex-1 overflow-y-auto bg-slate-950/80 rounded-lg border border-slate-800 p-2 font-mono text-xs space-y-0.5">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- ALGORITHM METRICS & COMPLEXITY -->
+      <div class="p-3.5 bg-slate-900/90 space-y-3">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+          <i data-lucide="bar-chart-2" class="w-4 h-4 text-emerald-400"></i>
+          Execution Analytics
+        </h2>
+
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="bg-slate-950/60 border border-slate-800 p-2.5 rounded-lg">
+            <div class="text-slate-400 text-[10px] uppercase">Nodes Visited</div>
+            <div id="statVisited" class="text-base font-bold text-indigo-300 font-mono mt-0.5">0</div>
+          </div>
+          <div class="bg-slate-950/60 border border-slate-800 p-2.5 rounded-lg">
+            <div class="text-slate-400 text-[10px] uppercase">Path Cost / Len</div>
+            <div id="statPathCost" class="text-base font-bold text-emerald-400 font-mono mt-0.5">0</div>
+          </div>
+          <div class="bg-slate-950/60 border border-slate-800 p-2.5 rounded-lg">
+            <div class="text-slate-400 text-[10px] uppercase">Time Complexity</div>
+            <div id="statComplexity" class="text-xs font-bold text-amber-300 font-mono mt-1">O(V + E)</div>
+          </div>
+          <div class="bg-slate-950/60 border border-slate-800 p-2.5 rounded-lg">
+            <div class="text-slate-400 text-[10px] uppercase">Space Complexity</div>
+            <div id="statSpace" class="text-xs font-bold text-cyan-300 font-mono mt-1">O(V)</div>
+          </div>
+        </div>
+
+        <div class="text-[11px] text-slate-500 flex items-center justify-between pt-1">
+          <span>Shortcuts: Space (Play), &rarr; (Step), R (Reset)</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- BOTTOM PLAYBACK TIMELINE & CONTROLS -->
+  <footer class="h-20 border-t border-slate-800 bg-slate-900/95 backdrop-blur-md px-6 flex items-center justify-between flex-shrink-0 z-20">
+    
+    <!-- LEFT: Step Narration Log -->
+    <div class="w-1/3 pr-4">
+      <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5 mb-1">
+        <i data-lucide="info" class="w-3.5 h-3.5 text-indigo-400"></i>
+        Live Step Narration
+      </div>
+      <div id="statusMessage" class="text-xs text-slate-200 truncate font-medium bg-slate-950/60 px-3 py-1.5 rounded-lg border border-slate-800">
+        Click "Play" or "Step" to begin visualization.
+      </div>
+    </div>
+
+    <!-- CENTER: Timeline Scrubber & Primary Controls -->
+    <div class="w-1/3 flex flex-col items-center gap-1.5">
+      <div class="flex items-center gap-3">
+        <button id="resetBtn" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition" title="Reset Timeline">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+        </button>
+        <button id="prevBtn" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition" title="Step Backward (Left Arrow)">
+          <i data-lucide="skip-back" class="w-4 h-4"></i>
+        </button>
+
+        <button id="playBtn" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>Play</span>
+        </button>
+
+        <button id="nextBtn" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition" title="Step Forward (Right Arrow)">
+          <i data-lucide="skip-forward" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Scrubber bar -->
+      <div class="w-full flex items-center gap-3">
+        <input type="range" id="timelineSlider" min="0" max="0" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+        <span id="stepCounter" class="text-xs font-mono text-slate-400 min-w-[50px] text-right">0 / 0</span>
+      </div>
+    </div>
+
+    <!-- RIGHT: Speed Slider & Stats -->
+    <div class="w-1/3 flex items-center justify-end gap-5 pl-4">
+      <div class="flex items-center gap-2">
+        <i data-lucide="gauge" class="w-4 h-4 text-slate-400"></i>
+        <label for="speedSlider" class="text-xs text-slate-400">Speed:</label>
+        <input type="range" id="speedSlider" min="1" max="10" value="5" class="w-24 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+        <span id="speedLabel" class="text-xs font-mono text-indigo-300 w-8 text-right font-semibold">1.0x</span>
+      </div>
+
+      <div class="h-6 w-px bg-slate-800"></div>
+
+      <div class="text-right">
+        <div class="text-[10px] uppercase text-slate-400 font-bold">Total Steps</div>
+        <div id="statTotalSteps" class="text-xs font-mono font-bold text-slate-200">0</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- DEPLOYMENT MODAL -->
+  <div id="deployModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 text-slate-200">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+          <div class="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            <i data-lucide="cloud-upload" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-white">Deploy GraphTraverse Online</h3>
+            <p class="text-xs text-slate-400">Publish your website in less than 2 minutes completely for free!</p>
+          </div>
+        </div>
+        <button id="closeDeployModalBtn" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Deployment options tabs -->
+      <div class="grid grid-cols-3 gap-3">
+        <div class="border border-indigo-500/30 bg-indigo-950/30 rounded-xl p-3.5 space-y-1.5">
+          <div class="flex items-center gap-1.5 font-bold text-indigo-300 text-sm">
+            <i data-lucide="github" class="w-4 h-4"></i>
+            GitHub Pages
+          </div>
+          <p class="text-[11px] text-slate-400">Push to GitHub repo & enable Pages. 100% free with custom domain.</p>
+        </div>
+
+        <div class="border border-slate-800 bg-slate-950/40 rounded-xl p-3.5 space-y-1.5">
+          <div class="flex items-center gap-1.5 font-bold text-white text-sm">
+            <i data-lucide="triangle" class="w-4 h-4"></i>
+            Vercel
+          </div>
+          <p class="text-[11px] text-slate-400">Drag & drop this folder onto vercel.com or connect your GitHub repository.</p>
+        </div>
+
+        <div class="border border-slate-800 bg-slate-950/40 rounded-xl p-3.5 space-y-1.5">
+          <div class="flex items-center gap-1.5 font-bold text-teal-300 text-sm">
+            <i data-lucide="globe" class="w-4 h-4"></i>
+            Netlify
+          </div>
+          <p class="text-[11px] text-slate-400">Drag & drop deployment with instant HTTPS and global CDN delivery.</p>
+        </div>
+      </div>
+
+      <!-- Quick Steps Guide -->
+      <div class="bg-slate-950 rounded-xl p-4 border border-slate-800 space-y-3 font-mono text-xs">
+        <div class="text-slate-400 text-[11px] font-sans font-bold uppercase tracking-wider">Quick GitHub Pages Instructions:</div>
+        <ol class="list-decimal list-inside space-y-1.5 text-slate-300 font-sans text-xs">
+          <li>Create a new repository on <a href="https://github.com/new" target="_blank" class="text-indigo-400 underline">github.com</a> named <code class="bg-slate-800 px-1 py-0.5 rounded text-indigo-300">graph-visualizer</code></li>
+          <li>In this project directory, run:
+            <pre class="bg-slate-900 text-emerald-400 p-2.5 rounded-lg mt-1 font-mono text-xs select-all">git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/graph-visualizer.git
+git push -u origin main</pre>
+          </li>
+          <li>Go to your GitHub repo &rarr; <strong>Settings</strong> &rarr; <strong>Pages</strong> &rarr; Select Branch <strong class="text-white">main</strong> and root <strong class="text-white">/</strong> &rarr; Click <strong>Save</strong>!</li>
+          <li>Your visualizer will immediately be live at <code class="text-emerald-400">https://YOUR_USERNAME.github.io/graph-visualizer/</code></li>
+        </ol>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button id="closeDeployModalBtn2" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold">
+          Got it
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLICATION SCRIPTS -->
+  <script src="js/graph.js"></script>
+  <script src="js/algorithms.js"></script>
+  <script src="js/presets.js"></script>
+  <script src="js/canvas.js"></script>
+  <script src="js/app.js"></script>
+  
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Modal toggles
+    const deployModal = document.getElementById('deployModal');
+    const openDeployModalBtn = document.getElementById('openDeployModalBtn');
+    const closeDeployModalBtn = document.getElementById('closeDeployModalBtn');
+    const closeDeployModalBtn2 = document.getElementById('closeDeployModalBtn2');
+
+    openDeployModalBtn.addEventListener('click', () => {
+      deployModal.classList.remove('hidden');
+    });
+    [closeDeployModalBtn, closeDeployModalBtn2].forEach(btn => {
+      btn.addEventListener('click', () => {
+        deployModal.classList.add('hidden');
+      });
+    });
+    deployModal.addEventListener('click', (e) => {
+      if (e.target === deployModal) deployModal.classList.add('hidden');
+    });
+  </script>
+</body>
+</html>
